@@ -1,9 +1,10 @@
 from sqlmodel import SQLModel, Field
 from datetime import datetime
+import uuid
 
 
 class TestMonthlyBase(SQLModel):
-    linac_id: int | None = Field(foreign_key="linac.id")
+    linac_id: uuid.UUID = Field(foreign_key="linac.id")
     date: datetime
     sec_verification_of_interlocks_and_treatment_accessories_working: bool = False
     sec_fixation_of_stretcher_movements_working: bool = False
@@ -39,9 +40,9 @@ class TestMonthlyBase(SQLModel):
     cone_beam_ct_kv_baseline_contrast: bool = False
     cone_beam_ct_kv_baseline_noise_and_uniformity: bool = False
     cone_beam_ct_kv_baseline_hu_constancy: bool = False
-    realized_by_id: int | None = Field(foreign_key="user.id")
+    realized_by_id: uuid.UUID = Field(foreign_key="user.id")
     observation: str
 
 class TestMonthly(TestMonthlyBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 

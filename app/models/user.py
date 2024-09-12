@@ -1,4 +1,6 @@
+from sqlalchemy.sql.schema import default_is_scalar
 from sqlmodel import SQLModel, Field
+import uuid
 
 
 class UserBase(SQLModel):
@@ -8,7 +10,7 @@ class UserBase(SQLModel):
     is_active: bool = True
 
 class User(UserBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
 
 class UserCreate(UserBase):

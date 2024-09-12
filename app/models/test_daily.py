@@ -1,9 +1,10 @@
 from sqlmodel import SQLModel, Field
 from datetime import datetime
+import uuid
 
 
 class TestDailyBase(SQLModel):
-    linac_id: int | None = Field(foreign_key="linac.id")
+    linac_id: uuid.UUID = Field(foreign_key="linac.id")
     date: datetime
     sec_interlocks_displaye_on_monitor: bool = False
     sec_door_lights_operational: bool = False
@@ -25,10 +26,10 @@ class TestDailyBase(SQLModel):
     qa_electrons_e9: str
     qa_electrons_e12: str
     qa_electrons_e15: str
-    realized_by_id: int | None = Field(foreign_key="user.id")
-    reviewed_by_id: int | None = Field(foreign_key="user.id")
+    realized_by_id: uuid.UUID = Field(foreign_key="user.id")
+    reviewed_by_id: uuid.UUID = Field(foreign_key="user.id")
     observation: str
 
 class TestDaily(TestDailyBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 

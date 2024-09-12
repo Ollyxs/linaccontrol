@@ -16,3 +16,6 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}

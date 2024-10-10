@@ -1,5 +1,7 @@
 annotated-types==0.7.0
 anyio==4.4.0
+asyncmy==0.2.9
+bcrypt==4.2.0
 beanie==1.26.0
 click==8.1.7
 dnspython==2.6.1
@@ -15,8 +17,8 @@ pip==22.0.2
 pydantic==2.9.1
 pydantic_core==2.23.3
 pydantic-settings==2.4.0
+PyJWT==2.9.0
 pymongo==4.8.0
-PyMySQL==1.1.1
 python-decouple==3.8
 python-dotenv==1.0.1
 PyYAML==6.0.2

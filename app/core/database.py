@@ -1,35 +1,55 @@
 from sqlmodel import create_engine, SQLModel, Session, select
-from app.core.config import settings
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
-import pymysql
+from sqlmodel.ext.asyncio.session import AsyncSession
+from app.core.config import settings
+from app.services.user_service import UserService
+from app.schemas.user_schema import UserCreateModel
+import asyncmy
 
 
-engine = create_engine(str(settings.DATABASE_URI), echo=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+async_engine = AsyncEngine(create_engine(str(settings.DATABASE_URI), echo=True))
+user_service = UserService()
 
-def create_db_if_not_exists():
-    connection = pymysql.connect(
-        host=settings.MYSQL_SERVER,
-        user=settings.MYSQL_USER,
-        password=settings.MYSQL_PASSWORD,
-        port=int(settings.MYSQL_PORT)
+
+async def create_db_if_not_exists() -> None:
+    connection = await asyncmy.connect(
+        host=settings.DATABASE_SERVER,
+        user=settings.DATABASE_USER,
+        password=settings.DATABASE_PASSWORD,
+        port=int(settings.DATABASE_PORT),
     )
 
-    with connection.cursor() as cursor:
-        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {settings.MYSQL_DB}")
-    connection.close()
+    async with connection.cursor() as cursor:
+        await cursor.execute(f"CREATE DATABASE IF NOT EXISTS {settings.DATABASE_NAME}")
+    await connection.ensure_closed()
 
-def init_db():
-    try:
-        create_db_if_not_exists()
-        SQLModel.metadata.create_all(engine)
-    except OperationalError as e:
-        print(f"Error to connect with database: {e}")
 
-def get_session():
-    session = SessionLocal()
-    try:
+async def create_admin_if_not_exists(session: AsyncSession) -> None:
+    admin_exists = await user_service.user_admin_exists(session)
+    if not admin_exists:
+        admin_data = UserCreateModel(
+            first_name=settings.ADMIN_FIRST_NAME,
+            last_name=settings.ADMIN_LAST_NAME,
+            username=settings.ADMIN_USERNAME,
+            password=settings.ADMIN_PASSWORD,
+            role="admin",
+        )
+        await user_service.create_user(admin_data, session)
+
+
+async def init_db() -> None:
+    await create_db_if_not_exists()
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+    async with AsyncSession(async_engine) as session:
+        await create_admin_if_not_exists(session)
+
+
+async def get_session() -> AsyncSession:
+    Session = sessionmaker(
+        bind=async_engine, class_=AsyncSession, expire_on_commit=False
+    )
+    async with Session() as session:
         yield session
-    finally:
-        session.close()

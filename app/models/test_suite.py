@@ -2,11 +2,11 @@ from sqlmodel import SQLModel, Field
 from uuid import UUID, uuid4
 
 
-class LinacBase(SQLModel):
+class TestSuiteBase(SQLModel):
     uid: UUID = Field(default_factory=uuid4, primary_key=True)
     name: str
-    is_active: bool = True
+    test_type: str
 
 
-class Linac(LinacBase, table=True):
-    __tablename__ = "linac"
+class TestSuite(TestSuiteBase, table=True):
+    __tablename__ = "test_suite"

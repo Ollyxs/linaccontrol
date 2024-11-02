@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.exceptions import HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
-from app.services.linac_service import LinacService
+from app.services.user_service import UserService
 from app.core.database import get_session
-from app.schemas.linac_schema import LinacModel, LinacCreateModel, LinacUpdateModel
+from app.schemas.user_schema import UserModel, UserCreateModel, UserUpdateModel
 from app.api.deps.dependencies import AccessTokenBearer, RoleChecker, get_current_user
 from typing import List, Optional
 from uuid import UUID
@@ -11,18 +11,18 @@ import logging
 
 
 logger = logging.getLogger(__name__)
-linac_router = APIRouter()
-linac_service = LinacService()
+user_router = APIRouter()
+user_service = UserService()
 access_token_bearer = AccessTokenBearer()
 admin_role_checker = Depends(RoleChecker(["admin"]))
 user_role_checker = Depends(RoleChecker(["admin", "fisico", "tecnico"]))
 
 
-@linac_router.get(
+@user_router.get(
     "/",
-    response_model=List[LinacModel],
+    response_model=List[UserModel],
     dependencies=[user_role_checker],
-    summary="Get all linacs",
+    summary="Get all users",
 )
 async def get_all_linacs(
     session: AsyncSession = Depends(get_session),
@@ -32,52 +32,38 @@ async def get_all_linacs(
         10, ge=1, le=10, description="Meximum Number of records to return"
     ),
 ):
-    linacs = await linac_service.get_all_linacs(session, is_active, skip, limit)
+    linacs = await user_service.get_all_users(session, is_active, skip, limit)
     return linacs
 
 
-@linac_router.get(
-    "/{linac_uid}",
-    response_model=LinacModel,
+@user_router.get(
+    "/{user_uid}",
+    response_model=UserModel,
     dependencies=[user_role_checker],
-    summary="Get linac by uid",
+    summary="Get user by uid",
 )
-async def get_linac(linac_uid: UUID, session: AsyncSession = Depends(get_session)):
-    linac = await linac_service.get_linac(linac_uid, session)
+async def get_linac(user_uid: UUID, session: AsyncSession = Depends(get_session)):
+    linac = await user_service.get_user(user_uid, session)
     if linac:
         return linac
     else:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Linac not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
 
-@linac_router.post(
-    "/create",
-    summary="Create new linac",
-    response_model=LinacModel,
-    dependencies=[admin_role_checker],
-    status_code=status.HTTP_201_CREATED,
-)
-async def create_linac(
-    linac_data: LinacCreateModel, session: AsyncSession = Depends(get_session)
-):
-    new_linac = await linac_service.create_linac(linac_data, session)
-    return new_linac
-
-
-@linac_router.patch(
+@user_router.patch(
     "/update/{linac_uid}",
     dependencies=[admin_role_checker],
     summary="Update linac by uid",
 )
-async def update_linac(
-    linac_uid: UUID,
-    linac_update_data: LinacUpdateModel,
+async def update_user(
+    user_uid: UUID,
+    user_update_data: UserUpdateModel,
     session: AsyncSession = Depends(get_session),
 ):
     logger.info(f"linac_uid: {linac_uid}, linac_update_data: {linac_update_data}")
-    updated_linac = await linac_service.update_linac(
+    updated_linac = await user_service.update_linac(
         linac_uid, linac_update_data, session
     )
     if updated_linac is None:
@@ -88,14 +74,14 @@ async def update_linac(
         return updated_linac
 
 
-@linac_router.delete(
+@user_router.delete(
     "/delete/{linac_uid}",
     dependencies=[admin_role_checker],
     summary="Delete linac by uid",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_linac(linac_uid: UUID, session: AsyncSession = Depends(get_session)):
-    linac_to_delete = await linac_service.delete_linac(linac_uid, session)
+    linac_to_delete = await user_service.delete_linac(linac_uid, session)
     if linac_to_delete:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Linac not found"

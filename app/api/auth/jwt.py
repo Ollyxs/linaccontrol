@@ -58,6 +58,7 @@ async def login_user(
                 user_data={
                     "uid": str(user.uid),
                     "username": user.username,
+                    "role": user.role,
                 }
             )
 
@@ -65,6 +66,7 @@ async def login_user(
                 user_data={
                     "uid": str(user.uid),
                     "username": user.username,
+                    "role": user.role,
                 },
                 expiry=timedelta(minutes=settings.REFRESH_EXPIRE_TOKEN_DAYS),
                 refresh=True,
@@ -77,6 +79,7 @@ async def login_user(
                     "user": {
                         "uid": str(user.uid),
                         "username": user.username,
+                        "role": user.role,
                     },
                 }
             )

@@ -6,6 +6,9 @@ from app.schemas.linac_test_suite_schema import (
 )
 from sqlmodel.ext.asyncio.session import AsyncSession
 from uuid import UUID
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class LinacTestSuiteService:
@@ -34,6 +37,16 @@ class LinacTestSuiteService:
         statement = select(LinacTestSuite).where(
             LinacTestSuite.linac_uid == linac_uid
             and LinacTestSuite.test_suite_uid == test_suite_uid
+        )
+        result = await session.exec(statement)
+        result = result.first()
+        return result
+
+    async def get_linac_test_suite_for_linac_uid_and_frequency(
+        self, linac_uid: UUID, frequency: str, session: AsyncSession
+    ):
+        statement = select(LinacTestSuite).where(
+            LinacTestSuite.linac_uid == linac_uid, LinacTestSuite.frequency == frequency
         )
         result = await session.exec(statement)
         result = result.first()

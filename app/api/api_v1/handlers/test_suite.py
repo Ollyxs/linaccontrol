@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 from app.services import test_suite_tests_service
+from app.services.linac_service import LinacService
 from app.services.tests_service import TestsService
 from app.services.test_suite_service import TestsSuiteService
 from app.services.test_suite_tests_service import TestSuiteTestsService
@@ -23,10 +24,12 @@ from app.schemas.linac_test_suite_schema import (
 from app.api.deps.dependencies import AccessTokenBearer, RoleChecker
 from typing import List
 from uuid import UUID
-from logging import log
+import logging
 
 
+logger = logging.getLogger(__name__)
 test_suite_router = APIRouter()
+linac_service = LinacService()
 tests_service = TestsService()
 test_suite_service = TestsSuiteService()
 test_suite_tests_service = TestSuiteTestsService()
@@ -70,6 +73,44 @@ async def get_test_suite(
     tests.sort(key=lambda x: x.category)
     if test_suite:
         return {"test_suite": test_suite, "test_suite_tests": tests}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Test suite not found"
+        )
+
+
+@test_suite_router.get(
+    "/{linac_uid}/{frequency}",
+    dependencies=[user_role_checker],
+    summary="Get test suite by linac uid and frequency",
+)
+async def get_test_suite_by_linac_uid_and_frequency(
+    linac_uid: UUID, frequency: str, session: AsyncSession = Depends(get_session)
+):
+    logger.info(f" ######################## frequency: {frequency}")
+    linac_test_suite = (
+        await linac_test_suite_service.get_linac_test_suite_for_linac_uid_and_frequency(
+            linac_uid, frequency, session
+        )
+    )
+    logger.info(f" ######################## linac_test_suite: {linac_test_suite}")
+    if linac_test_suite:
+        linac = await linac_service.get_linac(linac_uid, session)
+        test_suite = await test_suite_service.get_test_suite(
+            linac_test_suite.test_suite_uid, session
+        )
+        test_suite_tests = (
+            await test_suite_tests_service.get_test_suite_tests_by_test_suite_uid(
+                linac_test_suite.test_suite_uid, session
+            )
+        )
+        tests = []
+        for test in test_suite_tests:
+            result = await tests_service.get_test(test.test_uid, session)
+            tests.append(result)
+        tests.sort(key=lambda x: x.category)
+        if test_suite:
+            return {"linac": linac, "test_suite": test_suite, "test_suite_tests": tests}
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Test suite not found"

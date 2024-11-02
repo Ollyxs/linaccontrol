@@ -5,6 +5,8 @@ from uuid import UUID, uuid4
 class LinacBase(SQLModel):
     uid: UUID = Field(default_factory=uuid4, primary_key=True)
     name: str
+    location: str
+    image: bytes = Field(sa_column_kwargs={"nullable": False})
     is_active: bool = True
 
 

@@ -6,8 +6,17 @@ from uuid import UUID
 
 
 class LinacService:
-    async def get_all_linacs(self, session: AsyncSession):
+    async def get_all_linacs(
+        self,
+        session: AsyncSession,
+        is_active: bool = None,
+        skip: int = 0,
+        limit: int = 10,
+    ):
         statement = select(Linac)
+        if is_active is not None:
+            statement = statement.where(Linac.is_active == is_active)
+        statement = statement.offset(skip).limit(limit)
         result = await session.exec(statement)
         return result.all()
 
@@ -29,7 +38,7 @@ class LinacService:
     ):
         linac_to_update = await self.get_linac(linac_uid, session)
         if linac_to_update is not None:
-            update_data_dict = update_data.model_dump()
+            update_data_dict = update_data.model_dump(exclude_unset=True)
             for k, v in update_data_dict.items():
                 setattr(linac_to_update, k, v)
             await session.commit()

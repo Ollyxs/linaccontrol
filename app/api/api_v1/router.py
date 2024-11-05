@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.api_v1.handlers import linac, tests, test_suite, results
+from app.api.api_v1.handlers import linac, omitted_date, tests, test_suite, results
 from app.api.auth.jwt import auth_router
 
 
@@ -13,3 +13,6 @@ router.include_router(
     test_suite.test_suite_router, prefix="/test_suites", tags=["test_suites"]
 )
 router.include_router(results.results_router, prefix="/results", tags=["results"])
+router.include_router(
+    omitted_date.omitted_date_router, prefix="/omitted_dates", tags=["omitted_dates"]
+)

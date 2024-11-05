@@ -6,7 +6,7 @@ class LinacBase(SQLModel):
     uid: UUID = Field(default_factory=uuid4, primary_key=True)
     name: str
     location: str
-    image: bytes = Field(sa_column_kwargs={"nullable": False})
+    image: bytes = Field(sa_column_kwargs={"nullable": True})
     is_active: bool = True
 
 

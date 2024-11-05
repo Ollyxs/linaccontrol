@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import result
 from sqlmodel import select
 from app.models import Results
 from app.models.linac_test_suite import FrequencyEnum
+from app.models.omitted_date import OmittedDate
 from app.schemas.results_schema import ResultsCreateModel, ResultsUpdateModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from datetime import datetime, timedelta
@@ -13,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class ResultsService:
-    async def get_all_results(self, session):
-        statement = select(Results)
+    async def get_all_results(self, session: AsyncSession):
+        statement = select(Results).order_by(Results.created_at)
         results = await session.exec(statement)
         return results.all()
 
@@ -26,20 +27,14 @@ class ResultsService:
 
     async def create_result(
         self,
-        # linac_uid: UUID,
-        # test_suite_uid: UUID,
-        # frequency: FrequencyEnum,
         result_data: ResultsCreateModel,
         realized_by: UUID,
         session: AsyncSession,
-        # date: datetime = None
     ):
         result_data_dict = result_data.model_dump()
         result_data_dict["realized_by"] = realized_by
         if result_data_dict["created_at"] is None:
             result_data_dict["created_at"] = datetime.now()
-        # else:
-        # date = date.date()
 
         if await self.results_exist_for_date(
             result_data_dict["linac_uid"],
@@ -57,11 +52,12 @@ class ResultsService:
             result_data_dict["frequency"],
             result_data_dict["created_at"],
             session,
-            # linac_uid, test_suite_uid, frequency, date, session
         )
+
         if missing_dates:
             logger.error(f"Missing results for dates: {missing_dates}")
             raise ValueError(f"Missing results for dates: {missing_dates}")
+
         new_result = Results(**result_data_dict)
         session.add(new_result)
         await session.commit()
@@ -116,6 +112,9 @@ class ResultsService:
         date: datetime,
         session: AsyncSession,
     ):
+        if frequency != FrequencyEnum.daily:
+            return []
+
         statement_count = select(func.count()).where(
             Results.linac_uid == linac_uid,
             Results.test_suite_uid == test_suite_uid,
@@ -144,10 +143,21 @@ class ResultsService:
         logger.info(f"\n##########\nResults: {results_list}\n##########")
         results_dates = {result.created_at.date() for result in results_list}
         logger.info(f"\n##########\nResults Dates: {results_dates}\n##########")
+
+        omitted_dates_statement = select(OmittedDate).where(
+            (OmittedDate.linac_uid == None) | (OmittedDate.linac_uid == linac_uid)
+        )
+        omitted_dates_result = await session.exec(omitted_dates_statement)
+        omitted_dates = {
+            omitted_date.date for omitted_date in omitted_dates_result.all()
+        }
+
         missing_dates = [
             start_date + timedelta(days=i)
             for i in range((end_date - start_date).days)
-            if (start_date + timedelta(days=i)) not in results_dates
+            if (start_date + timedelta(days=i)).weekday() not in [5, 6]
+            and (start_date + timedelta(days=i)) not in results_dates
+            and (start_date + timedelta(days=i)) not in omitted_dates
         ]
         logger.info(f"\n##########\nMissing Dates: {missing_dates}\n##########")
         return missing_dates

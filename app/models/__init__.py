@@ -6,6 +6,7 @@ from .test_suite_tests import TestSuiteTests
 from .test_results import TestResults
 from .results import Results
 from .linac_test_suite import LinacTestSuite
+from .omitted_date import OmittedDate
 
 __all__ = [
     "User",
@@ -16,4 +17,5 @@ __all__ = [
     "TestResults",
     "Results",
     "LinacTestSuite",
+    "OmittedDate",
 ]

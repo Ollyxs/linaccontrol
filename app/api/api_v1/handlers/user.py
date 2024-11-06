@@ -21,19 +21,19 @@ user_role_checker = Depends(RoleChecker(["admin", "fisico", "tecnico"]))
 @user_router.get(
     "/",
     response_model=List[UserModel],
-    dependencies=[user_role_checker],
+    dependencies=[admin_role_checker],
     summary="Get all users",
 )
-async def get_all_linacs(
+async def get_all_users(
     session: AsyncSession = Depends(get_session),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(
-        10, ge=1, le=10, description="Meximum Number of records to return"
+        10, ge=1, le=100, description="Maximum number of records to return"
     ),
 ):
-    linacs = await user_service.get_all_users(session, is_active, skip, limit)
-    return linacs
+    users = await user_service.get_all_users(session, is_active, skip, limit)
+    return users
 
 
 @user_router.get(
@@ -42,10 +42,10 @@ async def get_all_linacs(
     dependencies=[user_role_checker],
     summary="Get user by uid",
 )
-async def get_linac(user_uid: UUID, session: AsyncSession = Depends(get_session)):
-    linac = await user_service.get_user(user_uid, session)
-    if linac:
-        return linac
+async def get_user(user_uid: UUID, session: AsyncSession = Depends(get_session)):
+    user = await user_service.get_user(user_uid, session)
+    if user:
+        return user
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -53,38 +53,36 @@ async def get_linac(user_uid: UUID, session: AsyncSession = Depends(get_session)
 
 
 @user_router.patch(
-    "/update/{linac_uid}",
+    "/update/{user_uid}",
+    response_model=UserModel,
     dependencies=[admin_role_checker],
-    summary="Update linac by uid",
+    summary="Update user by uid",
 )
 async def update_user(
     user_uid: UUID,
     user_update_data: UserUpdateModel,
     session: AsyncSession = Depends(get_session),
 ):
-    logger.info(f"linac_uid: {linac_uid}, linac_update_data: {linac_update_data}")
-    updated_linac = await user_service.update_linac(
-        linac_uid, linac_update_data, session
-    )
-    if updated_linac is None:
+    updated_user = await user_service.update_user(user_uid, user_update_data, session)
+    if updated_user is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Linac not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     else:
-        return updated_linac
+        return updated_user
 
 
 @user_router.delete(
-    "/delete/{linac_uid}",
+    "/delete/{user_uid}",
     dependencies=[admin_role_checker],
-    summary="Delete linac by uid",
+    summary="Delete user by uid",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-async def delete_linac(linac_uid: UUID, session: AsyncSession = Depends(get_session)):
-    linac_to_delete = await user_service.delete_linac(linac_uid, session)
-    if linac_to_delete:
+async def delete_user(user_uid: UUID, session: AsyncSession = Depends(get_session)):
+    user_to_delete = await user_service.delete_user(user_uid, session)
+    if user_to_delete is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Linac not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     else:
         return {}

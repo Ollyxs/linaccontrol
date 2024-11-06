@@ -19,8 +19,15 @@ logger = logging.getLogger(__name__)
 
 
 class ResultsService:
-    async def get_all_results(self, session: AsyncSession):
-        statement = select(Results).order_by(Results.created_at)
+    async def get_all_results(
+        self,
+        session: AsyncSession,
+        skip: int = 0,
+        limit: int = 10,
+    ):
+        statement = (
+            select(Results).order_by(Results.created_at).offset(skip).limit(limit)
+        )
         results = await session.exec(statement)
         return results.all()
 

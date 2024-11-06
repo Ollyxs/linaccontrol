@@ -95,5 +95,3 @@ class LinacTestSuiteService:
             await session.commit()
         else:
             return None
-
-    # async def assign_test_suite_to_linac(self, test_suite_uid: UUID, linac_test_suite_data)

@@ -9,8 +9,13 @@ from uuid import UUID
 
 
 class OmittedDateService:
-    async def get_all_omitted_dates(self, session: AsyncSession):
-        statement = select(OmittedDate)
+    async def get_all_omitted_dates(
+        self,
+        session: AsyncSession,
+        skip: int = 0,
+        limit: int = 100,
+    ):
+        statement = select(OmittedDate).offset(skip).limit(limit)
         result = await session.exec(statement)
         return result.all()
 

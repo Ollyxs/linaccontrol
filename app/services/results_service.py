@@ -5,6 +5,11 @@ from app.models import Results
 from app.models.linac_test_suite import FrequencyEnum
 from app.models.omitted_date import OmittedDate
 from app.schemas.results_schema import ResultsCreateModel, ResultsUpdateModel
+from app.schemas.test_results_schema import (
+    TestResultsModel,
+    TestResultsCreateModel,
+    TestResultsUpdateModel,
+)
 from sqlmodel.ext.asyncio.session import AsyncSession
 from datetime import datetime, timedelta
 from uuid import UUID
@@ -68,6 +73,16 @@ class ResultsService:
     ):
         result_to_update = await self.get_result(result_uid, session)
         if result_to_update is not None:
+            if result_to_update.frequency == FrequencyEnum.monthly:
+                current_date = datetime.now()
+                if (
+                    current_date.day > 20
+                    or current_date.month != result_to_update.created_at.month
+                ):
+                    raise ValueError(
+                        "Monthly results can only be update within the first 20 days of the month"
+                    )
+
             update_data_dict = update_data.model_dump()
             for k, v in update_data_dict.items():
                 setattr(result_to_update, k, v)
@@ -92,15 +107,33 @@ class ResultsService:
         date: datetime,
         session: AsyncSession,
     ):
-        start_of_date = datetime(date.year, date.month, date.day)
-        end_of_date = start_of_date + timedelta(days=1)
-        statement = select(Results).where(
-            Results.linac_uid == linac_uid,
-            Results.test_suite_uid == test_suite_uid,
-            Results.frequency == frequency,
-            Results.created_at >= start_of_date,
-            Results.created_at < end_of_date,
-        )
+        if frequency == FrequencyEnum.monthly:
+            start_of_month = datetime(date.year, date.month, 1)
+            end_of_month = (
+                datetime(date.year, date.month + 1, 1)
+                if date.month < 12
+                else datetime(date.year + 1, 1, 1)
+            )
+            statement = select(Results).where(
+                Results.linac_uid == linac_uid,
+                Results.test_suite_uid == test_suite_uid,
+                Results.frequency == frequency,
+                Results.created_at >= start_of_month,
+                Results.created_at < end_of_month,
+            )
+        elif frequency == FrequencyEnum.daily:
+            start_of_date = datetime(date.year, date.month, date.day)
+            end_of_date = start_of_date + timedelta(days=1)
+            statement = select(Results).where(
+                Results.linac_uid == linac_uid,
+                Results.test_suite_uid == test_suite_uid,
+                Results.frequency == frequency,
+                Results.created_at >= start_of_date,
+                Results.created_at < end_of_date,
+            )
+        else:
+            return None
+
         results = await session.exec(statement)
         return results.first() is not None
 

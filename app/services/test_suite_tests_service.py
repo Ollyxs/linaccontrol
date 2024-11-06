@@ -42,11 +42,28 @@ class TestSuiteTestsService:
             await session.commit()
         return new_test_suite_test
 
-    # async def create_test_suite_test(
-    #     self, test_suite_test_data: TestSuiteTestsCreateModel, session: AsyncSession
-    # ):
-    #     test_suite_test_data_dict = test_suite_test_data.model_dump()
-    #     new_test_suite_test = TestSuiteTests(**test_suite_test_data_dict)
-    #     session.add(new_test_suite_test)
-    #     await session.commit()
-    #     return new_test_suite_test
+    async def create_test_suite_test(
+        self, test_suite_uid: UUID, test_uid: UUID, session: AsyncSession
+    ):
+        new_test_suite_test = TestSuiteTests(
+            test_suite_uid=test_suite_uid, test_uid=test_uid
+        )
+        session.add(new_test_suite_test)
+        await session.commit()
+        return new_test_suite_test
+
+    async def delete_test_suite_test(
+        self, test_suite_uid: UUID, test_uid: UUID, session: AsyncSession
+    ):
+        statement = select(TestSuiteTests).where(
+            TestSuiteTests.test_suite_uid == test_suite_uid
+            and TestSuiteTests.test_uid == test_uid
+        )
+        result = await session.exec(statement)
+        test_suite_test_to_delete = result.first()
+        if test_suite_test_to_delete is not None:
+            await session.delete(test_suite_test_to_delete)
+            await session.commit()
+            return test_suite_test_to_delete
+        else:
+            return None

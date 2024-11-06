@@ -131,11 +131,6 @@ async def create_test_suite(
     await test_suite_tests_service.create_test_suite_tests(
         new_test_suite.uid, test_suite_tests_data.test_uid, session
     )
-    # for test_uid in test_suite_tests_data.test_uid:
-    #     test_data = TestSuiteTestsCreateModel(
-    #         test_uid=test_uid, test_suite_uid=new_test_suite.uid
-    #     )
-    #     await test_suite_tests_service.create_test_suite_test(test_data, session)
     created_test_suite = await test_suite_service.get_test_suite(
         new_test_suite.uid, session
     )
@@ -158,3 +153,41 @@ async def add_linac_to_test_suite(
         linac_test_suite_data, session
     )
     return new_linac_test_suite
+
+
+@test_suite_router.post(
+    "/{test_suite_uid}/add_test/{test_uid}",
+    dependencies=[admin_role_checker],
+    summary="Add test to test suite",
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_test_to_test_suite(
+    test_suite_uid: UUID,
+    test_uid: UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    new_test_suite_test = await test_suite_tests_service.create_test_suite_test(
+        test_suite_uid, test_uid, session
+    )
+    return new_test_suite_test
+
+
+@test_suite_router.delete(
+    "/{test_suite_uid}/remove_test/{test_uid}",
+    dependencies=[admin_role_checker],
+    summary="Remove test from test suite",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def remove_test_from_test_suite(
+    test_suite_uid: UUID,
+    test_uid: UUID,
+    session: AsyncSession = Depends(get_session),
+):
+    test_suite_test_to_delete = await test_suite_tests_service.delete_test_suite_test(
+        test_suite_uid, test_uid, session
+    )
+    if test_suite_test_to_delete is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Test suite test not found"
+        )
+    return None

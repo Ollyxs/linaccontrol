@@ -6,22 +6,38 @@ from app.schemas.omitted_date_schema import (
     OmittedDateUpdateModel,
 )
 from app.services.omitted_date_service import OmittedDateService
-from app.api.deps.dependencies import get_session
+from app.api.deps.dependencies import (
+    AccessTokenBearer,
+    RoleChecker,
+    get_current_user,
+    get_session,
+)
 from uuid import UUID
 from typing import List
 
 omitted_date_router = APIRouter()
-
 omitted_date_service = OmittedDateService()
+access_token_bearer = AccessTokenBearer()
+admin_role_checker = Depends(RoleChecker(["admin"]))
+user_role_checker = Depends(RoleChecker(["admin", "fisico", "tecnico"]))
 
 
-@omitted_date_router.get("/", response_model=List[OmittedDateModel])
+@omitted_date_router.get(
+    "/",
+    dependencies=[user_role_checker],
+    response_model=List[OmittedDateModel],
+    summary="Get all omitted dates",
+)
 async def get_all_omitted_dates(session: AsyncSession = Depends(get_session)):
     return await omitted_date_service.get_all_omitted_dates(session)
 
 
 @omitted_date_router.post(
-    "/", response_model=OmittedDateModel, status_code=status.HTTP_201_CREATED
+    "/",
+    dependencies=[admin_role_checker],
+    response_model=OmittedDateModel,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create new omitted date",
 )
 async def create_omitted_date(
     omitted_date_data: OmittedDateCreateModel,
@@ -30,7 +46,12 @@ async def create_omitted_date(
     return await omitted_date_service.create_omitted_date(omitted_date_data, session)
 
 
-@omitted_date_router.put("/{omitted_date_uid}", response_model=OmittedDateModel)
+@omitted_date_router.put(
+    "/{omitted_date_uid}",
+    dependencies=[admin_role_checker],
+    response_model=OmittedDateModel,
+    summary="Update omitted date",
+)
 async def update_omitted_date(
     omitted_date_uid: UUID,
     update_data: OmittedDateUpdateModel,
@@ -45,7 +66,10 @@ async def update_omitted_date(
 
 
 @omitted_date_router.delete(
-    "/{omitted_date_uid}", status_code=status.HTTP_204_NO_CONTENT
+    "/{omitted_date_uid}",
+    dependencies=[admin_role_checker],
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete omitted date",
 )
 async def delete_omitted_date(
     omitted_date_uid: UUID, session: AsyncSession = Depends(get_session)

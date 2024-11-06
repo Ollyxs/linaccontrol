@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 from app.models.users import User
-from app.schemas.test_results_schema import TestResultsCreateModel, TestResultsModel
+from app.schemas.test_results_schema import (
+    TestResultsCreateModel,
+    TestResultsModel,
+    TestResultsUpdateModel,
+)
 from app.services.results_service import ResultsService
 from app.services.test_results_service import TestResultsService
 from app.core.database import get_session
@@ -78,12 +82,12 @@ async def create_result(
 
 
 @results_router.patch(
-    "/{result_uid}",
+    "/review/{result_uid}",
     dependencies=[fisico_role_checker],
     response_model=ResultsModel,
-    summary="Update a result",
+    summary="Review a result",
 )
-async def update_result(
+async def review_result(
     result_uid: UUID,
     session: AsyncSession = Depends(get_session),
     user_details=Depends(access_token_bearer),
@@ -97,6 +101,33 @@ async def update_result(
             status_code=status.HTTP_404_NOT_FOUND, detail="Result not found"
         )
     return updated_result
+
+
+@results_router.patch(
+    "/{result_uid}",
+    dependencies=[fisico_role_checker],
+    # response_model=ResultsModel,
+    summary="Update a result",
+)
+async def update_result(
+    result_uid: UUID,
+    result_update_data: ResultsUpdateModel,
+    test_results_data: List[TestResultsUpdateModel],
+    session: AsyncSession = Depends(get_session),
+    user_details=Depends(access_token_bearer),
+):
+    updated_result = await results_service.update_result(
+        result_uid, result_update_data, session
+    )
+    if updated_result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Result not found"
+        )
+
+    updated_test_results = await test_results_service.update_test_results(
+        result_uid, test_results_data, session
+    )
+    return {"result": updated_result, "test_results": updated_test_results}
 
 
 @results_router.delete(

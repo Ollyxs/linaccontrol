@@ -1,8 +1,9 @@
 from sqlmodel import select
 from app.models import User
-from app.schemas.user_schema import UserCreateModel
+from app.schemas.user_schema import UserCreateModel, UserUpdateModel
 from app.core.security import generate_password_hash
 from sqlmodel.ext.asyncio.session import AsyncSession
+from uuid import UUID
 
 
 class UserService:
@@ -11,6 +12,26 @@ class UserService:
         result = await session.exec(statement)
         user = result.first()
         return user
+
+    async def get_all_users(
+        self,
+        session: AsyncSession,
+        is_active: bool = None,
+        skip: int = 0,
+        limit: int = 10,
+    ):
+        statement = select(User)
+        if is_active is not None:
+            statement = statement.where(User.is_active == is_active)
+        statement = statement.offset(skip).limit(limit)
+        result = await session.exec(statement)
+        return result.all()
+
+    async def get_user(self, user_uid: UUID, session: AsyncSession):
+        statement = select(User).where(User.uid == user_uid)
+        result = await session.exec(statement)
+        user = result.first()
+        return user if user is not None else None
 
     async def user_exists(self, username, session: AsyncSession):
         user = await self.get_user_by_username(username, session)
@@ -30,11 +51,23 @@ class UserService:
         await session.commit()
         return new_user
 
-    # @staticmethod
-    # async def create_user(user: UserAuth):
-    #     user_in = User(
-    #         name=user.name,
-    #         last_name=user.last_name,
-    #         username=user.username,
-    #         hashed_password=get_password(user.password),
-    #    )
+    async def update_user(
+        self, user_uid: UUID, update_data: UserUpdateModel, session: AsyncSession
+    ):
+        user_to_update = await self.get_user(user_uid, session)
+        if user_to_update is not None:
+            update_data_dict = update_data.model_dump(exclude_unset=True)
+            for k, v in update_data_dict.items():
+                setattr(user_to_update, k, v)
+            await session.commit()
+            return user_to_update
+        else:
+            return None
+
+    async def delete_user(self, user_uid: UUID, session: AsyncSession):
+        user_to_delete = await self.get_user(user_uid, session)
+        if user_to_delete is not None:
+            await session.delete(user_to_delete)
+            await session.commit()
+        else:
+            return None

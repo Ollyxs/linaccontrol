@@ -7,7 +7,9 @@ from app.models.linac_test_suite import FrequencyEnum
 
 class ResultsModel(SQLModel):
     uid: UUID
+    linac_uid: UUID
     test_suite_uid: UUID
+    frequency: FrequencyEnum
     result: str
     realized_by: UUID
     reviewed_by: UUID

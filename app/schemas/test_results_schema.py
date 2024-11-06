@@ -12,4 +12,8 @@ class TestResultsModel(SQLModel):
 class TestResultsCreateModel(SQLModel):
     test_uid: UUID
     result: str
-    # results_uid: UUID
+
+
+class TestResultsUpdateModel(SQLModel):
+    test_uid: UUID
+    result: str

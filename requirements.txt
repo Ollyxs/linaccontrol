@@ -4,6 +4,7 @@ asyncmy==0.2.9
 bcrypt==4.2.0
 beanie==1.26.0
 click==8.1.7
+cryptography==42.0.7
 dnspython==2.6.1
 exceptiongroup==1.2.2
 fastapi==0.114.0

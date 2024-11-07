@@ -11,7 +11,7 @@ class UserModel(SQLModel):
     username: str
     role: str
     is_active: bool = True
-    created_at: date
+    create_at: date
     hashed_password: str = Field(exclude=True)
 
 
@@ -21,7 +21,6 @@ class UserCreateModel(SQLModel):
     username: str = Field(max_length=12)
     password: str = Field(min_length=6)
     role: str
-    created_at: Optional[date] = None
 
 
 class UserUpdateModel(SQLModel):

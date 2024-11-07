@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import List, Optional
 from sqlmodel import SQLModel
 from datetime import date
 from uuid import UUID
 from app.models.linac_test_suite import FrequencyEnum
+from app.schemas.test_results_schema import TestResultsModel
 
 
 class ResultsModel(SQLModel):
@@ -12,9 +13,10 @@ class ResultsModel(SQLModel):
     frequency: FrequencyEnum
     result: str
     realized_by: UUID
-    reviewed_by: UUID
+    reviewed_by: Optional[UUID]
     created_at: date
     updated_at: date
+    tests: List[TestResultsModel]
 
 
 class ResultsCreateModel(SQLModel):

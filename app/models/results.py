@@ -21,4 +21,6 @@ class ResultsBase(SQLModel):
 class Results(ResultsBase, table=True):
     __tablename__ = "results"
     linac: list["Linac"] = Relationship(back_populates="results")
-    tests: list["TestResults"] = Relationship(back_populates="results")
+    tests: list["TestResults"] = Relationship(
+        back_populates="results", cascade_delete=True
+    )

@@ -11,7 +11,7 @@ class ResultsModel(SQLModel):
     linac_uid: UUID
     test_suite_uid: UUID
     frequency: FrequencyEnum
-    result: str
+    result: Optional[str]
     realized_by: UUID
     reviewed_by: Optional[UUID]
     created_at: date
@@ -28,6 +28,11 @@ class ResultsCreateModel(SQLModel):
 
 
 class ResultsUpdateModel(SQLModel):
-    result: str
+    result: Optional[str]
     reviewed_by: UUID
-    updated_at: Optional[date] = None
+    updated_at: Optional[date]
+
+
+class ResultsReviewModel(SQLModel):
+    reviewed_by: UUID
+    updated_at: date

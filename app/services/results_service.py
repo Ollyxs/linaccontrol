@@ -1,4 +1,5 @@
 from sqlalchemy import func
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import result
 from sqlmodel import select
 from app.models import Results
@@ -32,7 +33,11 @@ class ResultsService:
         return results.all()
 
     async def get_result(self, result_uid: UUID, session: AsyncSession):
-        statement = select(Results).where(Results.uid == result_uid)
+        statement = (
+            select(Results)
+            .where(Results.uid == result_uid)
+            .options(selectinload(Results.tests))
+        )
         result = await session.exec(statement)
         result = result.first()
         return result if result is not None else None
@@ -181,7 +186,7 @@ class ResultsService:
         results = await session.exec(statement)
         results_list = results.all()
         logger.info(f"\n##########\nResults: {results_list}\n##########")
-        results_dates = {result.created_at.date() for result in results_list}
+        results_dates = {result.created_at for result in results_list}
         logger.info(f"\n##########\nResults Dates: {results_dates}\n##########")
 
         omitted_dates_statement = select(OmittedDate).where(

@@ -80,7 +80,7 @@ async def update_user(
 )
 async def delete_user(user_uid: UUID, session: AsyncSession = Depends(get_session)):
     user_to_delete = await user_service.delete_user(user_uid, session)
-    if user_to_delete is None:
+    if user_to_delete:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )

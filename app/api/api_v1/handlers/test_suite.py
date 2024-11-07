@@ -186,8 +186,8 @@ async def remove_test_from_test_suite(
     test_suite_test_to_delete = await test_suite_tests_service.delete_test_suite_test(
         test_suite_uid, test_uid, session
     )
-    if test_suite_test_to_delete is None:
+    if test_suite_test_to_delete:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Test suite test not found"
         )
-    return None
+    return {}

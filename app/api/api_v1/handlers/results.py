@@ -40,7 +40,10 @@ async def get_all_results(
 
 
 @results_router.get(
-    "/{result_uid}", dependencies=[user_role_checker], summary="Get a result"
+    "/{result_uid}",
+    dependencies=[user_role_checker],
+    response_model=ResultsModel,
+    summary="Get a result",
 )
 async def get_result(
     result_uid: UUID,
@@ -142,9 +145,9 @@ async def delete_result(
     user_details=Depends(access_token_bearer),
 ):
     result_to_delete = await results_service.delete_result(result_uid, session)
-    if result_to_delete is None:
+    if result_to_delete:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Result not found"
         )
     else:
-        return None
+        return {}

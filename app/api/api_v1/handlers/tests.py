@@ -86,7 +86,7 @@ async def update_test(
 )
 async def delete_test(test_uid: UUID, session: AsyncSession = Depends(get_session)):
     test_to_delete = await tets_service.delete_test(test_uid, session)
-    if test_to_delete is None:
+    if test_to_delete:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Test not found"
         )

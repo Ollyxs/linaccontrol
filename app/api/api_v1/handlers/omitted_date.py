@@ -46,7 +46,7 @@ async def create_omitted_date(
     return await omitted_date_service.create_omitted_date(omitted_date_data, session)
 
 
-@omitted_date_router.put(
+@omitted_date_router.patch(
     "/{omitted_date_uid}",
     dependencies=[admin_role_checker],
     response_model=OmittedDateModel,
@@ -77,6 +77,8 @@ async def delete_omitted_date(
     omitted_date = await omitted_date_service.delete_omitted_date(
         omitted_date_uid, session
     )
-    if omitted_date is None:
-        raise HTTPException(status_code=404, detail="Omitted date not found")
-    return None
+    if omitted_date:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Omitted date not found"
+        )
+    return {}

@@ -60,8 +60,7 @@ class ResultsService:
             result_data_dict["created_at"],
             session,
         ):
-            logger.error("Results already exist for this date")
-            raise ValueError("Results already exist for this date")
+            return None, "Results already exist for this date."
 
         missing_dates = await self.missing_results_for_previous_days(
             result_data_dict["linac_uid"],
@@ -72,8 +71,8 @@ class ResultsService:
         )
 
         if missing_dates:
-            logger.error(f"Missing results for dates: {missing_dates}")
-            raise ValueError(f"Missing results for dates: {missing_dates}")
+            missing_dates_str = [date.strftime("%Y-%m-%d") for date in missing_dates]
+            return None, f"Missing results for dates: {missing_dates_str}"
 
         new_result = Results(**result_data_dict)
         session.add(new_result)
@@ -91,17 +90,18 @@ class ResultsService:
                     current_date.day > 20
                     or current_date.month != result_to_update.created_at.month
                 ):
-                    raise ValueError(
-                        "Monthly results can only be update within the first 20 days of the month"
+                    return (
+                        None,
+                        "Monthly results can only be update within the first 20 days of the month.",
                     )
 
             update_data_dict = update_data.model_dump()
             for k, v in update_data_dict.items():
                 setattr(result_to_update, k, v)
             await session.commit()
-            return result_to_update
+            return result_to_update, None
         else:
-            return None
+            return None, "Result not found."
 
     async def delete_result(self, result_uid: UUID, session: AsyncSession):
         result_to_delete = await self.get_result(result_uid, session)
@@ -166,9 +166,7 @@ class ResultsService:
             Results.frequency == frequency,
         )
         result_count = await session.exec(statement_count)
-        logger.info(f"\n##########\nResult Count: {result_count}\n##########")
         count = result_count.one()
-        logger.info(f"\n##########\nCount: {count}\n##########")
         if count == 0:
             return []
 
@@ -185,9 +183,7 @@ class ResultsService:
         )
         results = await session.exec(statement)
         results_list = results.all()
-        logger.info(f"\n##########\nResults: {results_list}\n##########")
         results_dates = {result.created_at for result in results_list}
-        logger.info(f"\n##########\nResults Dates: {results_dates}\n##########")
 
         omitted_dates_statement = select(OmittedDate).where(
             (OmittedDate.linac_uid == None) | (OmittedDate.linac_uid == linac_uid)
@@ -204,5 +200,4 @@ class ResultsService:
             and (start_date + timedelta(days=i)) not in results_dates
             and (start_date + timedelta(days=i)) not in omitted_dates
         ]
-        logger.info(f"\n##########\nMissing Dates: {missing_dates}\n##########")
         return missing_dates

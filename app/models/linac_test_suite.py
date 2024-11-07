@@ -2,7 +2,6 @@ from sqlmodel import SQLModel, Field, Relationship
 from enum import Enum
 from uuid import UUID
 from typing import Optional
-from . import Linac, TestSuite
 
 
 class FrequencyEnum(str, Enum):
@@ -25,4 +24,4 @@ class LinacTestSuiteBase(SQLModel):
 
 class LinacTestSuite(LinacTestSuiteBase, table=True):
     __tablename__ = "linac_test_suite"
-    linac: Optional[Linac] = Relationship(back_populates="test_suite")
+    linac: list["Linac"] = Relationship(back_populates="linac_test_suite")

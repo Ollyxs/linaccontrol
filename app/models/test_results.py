@@ -1,6 +1,6 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 from uuid import UUID, uuid4
-from . import Tests, Results
+from typing import Optional
 
 
 class TestResultsBase(SQLModel):
@@ -12,3 +12,4 @@ class TestResultsBase(SQLModel):
 
 class TestResults(TestResultsBase, table=True):
     __tablename__ = "test_results"
+    results: Optional["Results"] = Relationship(back_populates="tests")

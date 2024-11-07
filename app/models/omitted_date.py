@@ -2,7 +2,6 @@ from sqlmodel import SQLModel, Field, Relationship
 from datetime import date
 from uuid import UUID, uuid4
 from typing import Optional
-from . import Linac
 
 
 class OmittedDateBase(SQLModel):
@@ -16,4 +15,4 @@ class OmittedDateBase(SQLModel):
 
 class OmittedDate(OmittedDateBase, table=True):
     __tablename__ = "omitted_dates"
-    linac: Optional[Linac] = Relationship(back_populates="omitted_dates")
+    linac: Optional["Linac"] = Relationship(back_populates="omitted_dates")

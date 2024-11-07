@@ -4,7 +4,6 @@ import sqlalchemy.dialects.mysql as my
 from uuid import UUID, uuid4
 from datetime import date
 from typing import Optional
-from . import Linac, TestSuite, User
 
 
 class ResultsBase(SQLModel):
@@ -21,4 +20,5 @@ class ResultsBase(SQLModel):
 
 class Results(ResultsBase, table=True):
     __tablename__ = "results"
-    linac: Optional[Linac] = Relationship(back_populates="results")
+    linac: list["Linac"] = Relationship(back_populates="results")
+    tests: list["TestResults"] = Relationship(back_populates="results")

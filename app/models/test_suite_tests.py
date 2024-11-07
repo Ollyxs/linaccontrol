@@ -1,6 +1,5 @@
 from sqlmodel import SQLModel, Field
 from uuid import UUID
-from . import TestSuite, Tests
 
 
 class TestSuiteTestsBase(SQLModel):

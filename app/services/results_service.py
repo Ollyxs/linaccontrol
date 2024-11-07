@@ -27,7 +27,10 @@ class ResultsService:
         limit: int = 10,
     ):
         statement = (
-            select(Results).order_by(Results.created_at).offset(skip).limit(limit)
+            select(Results)
+            .order_by(Results.created_at.desc())
+            .offset(skip)
+            .limit(limit)
         )
         results = await session.exec(statement)
         return results.all()
@@ -77,7 +80,7 @@ class ResultsService:
         new_result = Results(**result_data_dict)
         session.add(new_result)
         await session.commit()
-        return new_result
+        return new_result, None
 
     async def update_result(
         self, result_uid: UUID, update_data: ResultsUpdateModel, session: AsyncSession

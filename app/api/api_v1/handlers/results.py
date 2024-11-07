@@ -13,9 +13,11 @@ from app.core.database import get_session
 from app.schemas.results_schema import (
     ResultsModel,
     ResultsCreateModel,
+    ResultsReviewModel,
     ResultsUpdateModel,
 )
 from app.api.deps.dependencies import AccessTokenBearer, RoleChecker, get_current_user
+from datetime import date
 from typing import List
 from uuid import UUID
 
@@ -71,12 +73,17 @@ async def create_result(
     user_details=Depends(access_token_bearer),
     current_user: User = Depends(get_current_user),
 ):
-    new_result = await results_service.create_result(
+    new_result, error = await results_service.create_result(
         result_data, current_user.uid, session
     )
+
+    if error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+
     await test_results_service.create_test_results(
         new_result.uid, test_results_data, session
     )
+
     test_results = await test_results_service.get_test_results_by_result_uid(
         new_result.uid, session
     )
@@ -87,7 +94,6 @@ async def create_result(
 @results_router.patch(
     "/review/{result_uid}",
     dependencies=[fisico_role_checker],
-    response_model=ResultsModel,
     summary="Review a result",
 )
 async def review_result(
@@ -96,10 +102,13 @@ async def review_result(
     user_details=Depends(access_token_bearer),
     current_user: User = Depends(get_current_user),
 ):
-    updated_result = await results_service.update_result(
-        result_uid, current_user.uid, session
+    update_data = ResultsReviewModel(
+        reviewed_by=current_user.uid, updated_at=date.today()
     )
-    if updated_result is None:
+    updated_result, error = await results_service.update_result(
+        result_uid, update_data, session
+    )
+    if error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Result not found"
         )
@@ -109,7 +118,6 @@ async def review_result(
 @results_router.patch(
     "/{result_uid}",
     dependencies=[fisico_role_checker],
-    # response_model=ResultsModel,
     summary="Update a result",
 )
 async def update_result(

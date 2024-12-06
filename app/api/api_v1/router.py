@@ -6,6 +6,8 @@ from app.api.api_v1.handlers import (
     test_suite,
     results,
     user,
+    frequency,
+    test_category,
 )
 from app.api.auth.jwt import auth_router
 
@@ -24,3 +26,11 @@ router.include_router(
     omitted_date.omitted_date_router, prefix="/omitted_dates", tags=["omitted_dates"]
 )
 router.include_router(user.user_router, prefix="/users", tags=["users"])
+router.include_router(
+    frequency.frequency_router, prefix="/frequencies", tags=["frequencies"]
+)
+router.include_router(
+    test_category.test_category_router,
+    prefix="/test_categories",
+    tags=["test_categories"],
+)

@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel
 from uuid import UUID
-from typing import List, Optional
+from typing import List
 
 
 class TestSuiteTestsModel(SQLModel):
@@ -9,5 +9,4 @@ class TestSuiteTestsModel(SQLModel):
 
 
 class TestSuiteTestsCreateModel(SQLModel):
-    # test_suite_uid: UUID
     test_uid: List[UUID]

@@ -2,7 +2,6 @@ from typing import List, Optional
 from sqlmodel import SQLModel
 from datetime import date
 from uuid import UUID
-from app.models.linac_test_suite import FrequencyEnum
 from app.schemas.test_results_schema import TestResultsModel
 
 
@@ -10,7 +9,7 @@ class ResultsModel(SQLModel):
     uid: UUID
     linac_uid: UUID
     test_suite_uid: UUID
-    frequency: FrequencyEnum
+    frequency_uid: UUID
     result: Optional[str]
     realized_by: UUID
     reviewed_by: Optional[UUID]
@@ -22,14 +21,14 @@ class ResultsModel(SQLModel):
 class ResultsCreateModel(SQLModel):
     linac_uid: UUID
     test_suite_uid: UUID
-    frequency: FrequencyEnum
+    frequency_uid: UUID
     result: str
     created_at: Optional[date] = None
 
 
 class ResultsUpdateModel(SQLModel):
     result: Optional[str]
-    reviewed_by: UUID
+    reviewed_by: Optional[UUID]
     updated_at: Optional[date]
 
 

@@ -31,7 +31,7 @@ async def get_all_tests(
 
 @test_router.get(
     "/{test_uid}",
-    response_model=TestsModel,
+    # response_model=TestsModel,
     dependencies=[user_role_checker],
     summary="Get test by uid",
 )

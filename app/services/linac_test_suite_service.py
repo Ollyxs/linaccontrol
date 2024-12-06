@@ -43,10 +43,11 @@ class LinacTestSuiteService:
         return result
 
     async def get_linac_test_suite_for_linac_uid_and_frequency(
-        self, linac_uid: UUID, frequency: str, session: AsyncSession
+        self, linac_uid: UUID, frequency_uid: UUID, session: AsyncSession
     ):
         statement = select(LinacTestSuite).where(
-            LinacTestSuite.linac_uid == linac_uid, LinacTestSuite.frequency == frequency
+            LinacTestSuite.linac_uid == linac_uid,
+            LinacTestSuite.frequency_uid == frequency_uid,
         )
         result = await session.exec(statement)
         result = result.first()

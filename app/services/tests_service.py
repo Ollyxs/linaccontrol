@@ -1,21 +1,34 @@
 from sqlmodel import select
 from app.models import Tests
+from app.models.test_category import TestCategory
 from app.schemas.tests_schema import TestsCreateModel, TestsUpdateModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from uuid import UUID
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TestsService:
     async def get_all_tests(self, session: AsyncSession):
-        statement = select(Tests).order_by(Tests.category)
+        statement = select(Tests).order_by(Tests.category_uid)
         result = await session.exec(statement)
         return result.all()
 
     async def get_test(self, test_uid: UUID, session: AsyncSession):
-        statement = select(Tests).where(Tests.uid == test_uid)
+        statement = (
+            select(Tests, TestCategory)
+            .join(TestCategory, Tests.category_uid == TestCategory.uid)
+            .where(Tests.uid == test_uid)
+        )
         result = await session.exec(statement)
-        test = result.first()
-        return test if test is not None else None
+        test, category = result.first()
+        if test:
+            test_dict = test.model_dump()
+            test_dict["category_name"] = category.name
+            return test_dict
+        return None
+        # return test if test is not None else None
 
     async def create_test(self, test_data: TestsCreateModel, session: AsyncSession):
         test_data_dict = test_data.model_dump()

@@ -7,6 +7,9 @@ from app.services.tests_service import TestsService
 from app.services.test_suite_service import TestsSuiteService
 from app.services.test_suite_tests_service import TestSuiteTestsService
 from app.services.linac_test_suite_service import LinacTestSuiteService
+from app.services.frequency_service import FrequencyService
+from app.services.test_category_service import TestCategoryService
+from app.services.results_service import ResultsService
 from app.core.database import get_session
 from app.schemas.tests_suite_schema import (
     TestsSuiteModel,
@@ -22,8 +25,9 @@ from app.schemas.linac_test_suite_schema import (
     LinacTestSuiteModel,
 )
 from app.api.deps.dependencies import AccessTokenBearer, RoleChecker
-from typing import List
+from typing import List, Optional
 from uuid import UUID
+from datetime import datetime
 import logging
 
 
@@ -34,6 +38,9 @@ tests_service = TestsService()
 test_suite_service = TestsSuiteService()
 test_suite_tests_service = TestSuiteTestsService()
 linac_test_suite_service = LinacTestSuiteService()
+frequency_service = FrequencyService()
+test_category_service = TestCategoryService()
+results_service = ResultsService()
 access_token_bearer = AccessTokenBearer()
 admin_role_checker = Depends(RoleChecker(["admin"]))
 user_role_checker = Depends(RoleChecker(["admin", "fisico", "tecnico"]))
@@ -69,8 +76,12 @@ async def get_test_suite(
     tests = []
     for test in test_suite_tests:
         result = await tests_service.get_test(test.test_uid, session)
+        category_name = await test_category_service.get_test_category_by_name(
+            result.category_uid, session
+        )
+        result.category_name = category_name
         tests.append(result)
-    tests.sort(key=lambda x: x.category)
+    tests.sort(key=lambda x: x.category_name)
     if test_suite:
         return {"test_suite": test_suite, "test_suite_tests": tests}
     else:
@@ -85,15 +96,25 @@ async def get_test_suite(
     summary="Get test suite by linac uid and frequency",
 )
 async def get_test_suite_by_linac_uid_and_frequency(
-    linac_uid: UUID, frequency: str, session: AsyncSession = Depends(get_session)
+    linac_uid: UUID,
+    frequency: str,
+    date: Optional[datetime] = None,
+    session: AsyncSession = Depends(get_session),
 ):
-    logger.info(f" ######################## frequency: {frequency}")
+
+    frequency_uid = await frequency_service.get_frequency_by_name(frequency, session)
+    if not frequency_uid:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Frequency not found"
+        )
+
+    frequency_dict = {"uid": frequency_uid, "name": frequency}
+
     linac_test_suite = (
         await linac_test_suite_service.get_linac_test_suite_for_linac_uid_and_frequency(
-            linac_uid, frequency, session
+            linac_uid, frequency_uid, session
         )
     )
-    logger.info(f" ######################## linac_test_suite: {linac_test_suite}")
     if linac_test_suite:
         linac = await linac_service.get_linac(linac_uid, session)
         test_suite = await test_suite_service.get_test_suite(
@@ -108,9 +129,70 @@ async def get_test_suite_by_linac_uid_and_frequency(
         for test in test_suite_tests:
             result = await tests_service.get_test(test.test_uid, session)
             tests.append(result)
-        tests.sort(key=lambda x: x.category)
+        tests.sort(
+            key=lambda x: (x["category_name"], -ord(x["test_name"][0])), reverse=True
+        )
+
+        # Verficar si ya existe un resultado para la fecha especificada
+        current_date = date or datetime.now()
+        if await results_service.results_exist_for_date(
+            linac_uid,
+            linac_test_suite.test_suite_uid,
+            frequency_uid,
+            current_date,
+            session,
+        ):
+            if frequency == "mensual":
+                existing_result = (
+                    await results_service.get_result_by_linac_test_suite_and_frequency(
+                        linac_uid,
+                        linac_test_suite.test_suite_uid,
+                        frequency_uid,
+                        session,
+                    )
+                )
+
+                if existing_result:
+                    for test in tests:
+                        for test_result in existing_result["tests"]:
+                            if str(test_result["test_uid"]) == str(test["uid"]):
+                                test["result"] = test_result["result"]
+                return {
+                    "linac": linac,
+                    "frequency": frequency_dict,
+                    "test_suite": test_suite,
+                    "test_suite_tests": tests,
+                    "result_uid": existing_result["uid"],
+                    "result": existing_result["result"],
+                }
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Results already exist for this date",
+                )
+
+        # Verificar si faltan resultados para días anteriores
+        missing_dates = await results_service.missing_results_for_previous_days(
+            linac_uid,
+            linac_test_suite.test_suite_uid,
+            frequency_uid,
+            current_date,
+            session,
+        )
+        if missing_dates:
+            missing_dates_str = [date.strftime("%Y-%m-%d") for date in missing_dates]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Missing results for dates: {missing_dates_str}",
+            )
+
         if test_suite:
-            return {"linac": linac, "test_suite": test_suite, "test_suite_tests": tests}
+            return {
+                "linac": linac,
+                "frequency": frequency_dict,
+                "test_suite": test_suite,
+                "test_suite_tests": tests,
+            }
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Test suite not found"

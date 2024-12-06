@@ -84,7 +84,7 @@ async def login_user(
                 }
             )
     raise HTTPException(
-        status_code=status.HHTP_403_FORBIDDEN, detail="Invalid credentials"
+        status_code=status.HTTP_403_FORBIDDEN, detail="Invalid credentials"
     )
 
 
@@ -101,21 +101,3 @@ async def get_new_access_token(token_details: dict = Depends(RefreshTokenBearer(
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token"
     )
-
-
-#
-# @auth_router.get('/{user_id}', summary="Get user by id")
-# async def get_user(user_id: int):
-#     pass
-#
-# @user_router.patch('/update/{user_id}', summary="Update user by id")
-# async def update_user(user_id: int, data: UserAuth):
-#     pass
-#
-# @user_router.patch('/soft_delete/{user_id}', summary="Soft delete user by id")
-# async def soft_delete_user(user_id: int):
-#     pass
-#
-# @user_router.delete('/delete/{user_id}', summary="Delete user by id")
-# async def delete_user(user_id: int):
-#     pass
